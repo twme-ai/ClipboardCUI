@@ -74,20 +74,39 @@ class CuiRecorder {
   }
 }
 
-/** Counts every clientbound packet by name. */
+const MOVE_PACKETS = new Set(['entity_teleport', 'sync_entity_position', 'teleport_entity', 'rel_entity_move'])
+const COUNTED_PACKETS = new Set(['spawn_entity', 'entity_destroy', 'entity_metadata', 'set_passengers',
+  'bundle_delimiter', 'custom_payload', ...MOVE_PACKETS])
+
+/**
+ * Counts the clientbound packets that render the preview. Spawns and movement only count for
+ * Text Display entities (lines and their root anchors), so a preview that is moved by teleporting
+ * its entities is measured the same way as one that is respawned, and mobs are ignored.
+ */
 class PacketCounter {
   constructor(bot) {
     this.counts = new Map()
+    this.spawns = 0
     this.textDisplaySpawns = 0
+    this.moves = 0
+    this.renderedIds = new Set()
     const textDisplayId = bot.registry.entitiesByName.text_display.id
     bot._client.on('packet', (data, meta) => {
-      this.counts.set(meta.name, (this.counts.get(meta.name) ?? 0) + 1)
-      if (meta.name === 'spawn_entity' && data.type === textDisplayId) this.textDisplaySpawns++
+      if (meta.name === 'spawn_entity' && data.type === textDisplayId) {
+        this.renderedIds.add(data.entityId)
+        this.spawns++
+        this.textDisplaySpawns++
+      }
+      if (MOVE_PACKETS.has(meta.name)) {
+        if (!this.renderedIds.has(data.entityId)) return
+        this.moves++
+      }
+      if (COUNTED_PACKETS.has(meta.name)) this.counts.set(meta.name, (this.counts.get(meta.name) ?? 0) + 1)
     })
   }
 
   snapshot() {
-    return { counts: new Map(this.counts), textDisplaySpawns: this.textDisplaySpawns }
+    return { counts: new Map(this.counts), spawns: this.spawns, textDisplaySpawns: this.textDisplaySpawns, moves: this.moves }
   }
 
   since(snapshot) {
@@ -95,13 +114,21 @@ class PacketCounter {
     let total = 0
     for (const [name, count] of this.counts) {
       const delta = count - (snapshot.counts.get(name) ?? 0)
-      if (delta > 0 && ['spawn_entity', 'entity_destroy', 'entity_metadata', 'set_passengers',
-        'entity_teleport', 'sync_entity_position', 'bundle_delimiter', 'custom_payload'].includes(name)) {
+      if (delta > 0) {
         diff[name] = delta
         total += delta
       }
     }
-    return { ...diff, entityAndCuiPackets: total, textDisplaySpawns: this.textDisplaySpawns - snapshot.textDisplaySpawns }
+    const spawns = this.spawns - snapshot.spawns
+    const moves = this.moves - snapshot.moves
+    return {
+      ...diff,
+      entityAndCuiPackets: total,
+      textDisplaySpawns: this.textDisplaySpawns - snapshot.textDisplaySpawns,
+      previewSpawns: spawns,
+      previewMoves: moves,
+      previewUpdates: spawns + moves
+    }
   }
 }
 
@@ -271,6 +298,11 @@ async function worldEditDisplayScenario() {
   const packets = new PacketCounter(bot)
   const cui = new CuiRecorder(bot)
   await sleep(2500) // WorldEditDisplay emulates the CUI handshake one second after join
+  const debugLog = []
+  bot.on('messagestr', message => {
+    if (message.includes('[Debug]')) debugLog.push(`${Date.now() % 100000} ${message.replace(/^.*\[Debug\] /, '')}`)
+  })
+  await command(bot, '/wedisplay debug')
 
   await command(bot, '/tp ClipWed 12.5 -60 40.5')
   await command(bot, '//pos1 10,-60,45')
@@ -286,25 +318,30 @@ async function worldEditDisplayScenario() {
   await command(bot, '/tp ClipWed 30.5 -60 40.5')
   await sleep(2000)
   const teleportUpdate = packets.since(snapshot)
+  assert(teleportUpdate.previewUpdates > 0, 'the preview did not move after a teleport')
   assertEqual(liveTextDisplays(bot), previewEntities, 'the moved preview has the same entity count')
 
   snapshot = packets.snapshot()
   await walk(bot, 2000)
   const duringWalk = packets.since(snapshot)
-  await sleep(1500)
+  // Generating new chunks can slow the server down, so wait for the update instead of a fixed time.
+  for (let waited = 0; waited < 6000 && packets.since(snapshot).previewUpdates === 0; waited += 100) await sleep(100)
+  await sleep(500)
   const walkTotal = packets.since(snapshot)
 
   results.worldEditDisplay = { previewEntities, teleportUpdate, settleWalk: { duringWalk, total: walkTotal } }
-  assert(duringWalk.textDisplaySpawns === 0, `settle mode re-rendered ${duringWalk.textDisplaySpawns} entities while walking`)
-  assert(walkTotal.textDisplaySpawns > 0, 'preview was not re-rendered after the walk ended')
+  results.worldEditDisplay.debugLog = debugLog
+  results.worldEditDisplay.position = bot.entity.position.toString()
+  assert(duringWalk.previewUpdates === 0, `settle mode updated the preview while walking: ${JSON.stringify(duringWalk)}`)
+  assert(walkTotal.previewUpdates > 0, 'preview was not updated after the walk ended')
 
   snapshot = packets.snapshot()
   await command(bot, '/clipboardcui mode follow')
   await walk(bot, 2000)
   await sleep(1500)
   results.worldEditDisplay.followWalk = packets.since(snapshot)
-  assert(results.worldEditDisplay.followWalk.textDisplaySpawns > walkTotal.textDisplaySpawns,
-    'follow mode should render while walking (debounce must not starve)')
+  assert(results.worldEditDisplay.followWalk.previewUpdates > walkTotal.previewUpdates,
+    'follow mode should update while walking (debounce must not starve)')
 
   bot.quit()
 }
