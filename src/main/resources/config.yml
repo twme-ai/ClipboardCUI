@@ -1,0 +1,50 @@
+# ClipboardCUI
+#
+# Sends your WorldEdit clipboard's paste footprint as a WorldEditCUI multi-region.
+# It is rendered by the WorldEditCUI client mod, or by the WorldEditDisplay server plugin
+# for players without the mod. Nothing is sent to players who have neither.
+#
+# 以 WorldEditCUI 多選區訊息送出剪貼簿的貼上範圍，由 WorldEditCUI 模組或
+# WorldEditDisplay 插件渲染；兩者都沒有的玩家不會收到任何訊息。
+
+# Whether the preview is on for players who never ran /clipboardcui on|off.
+# 玩家沒有自行切換過時，預覽是否開啟。
+default-enabled: true
+
+# follow: update while moving (rate limited). Cheap with WorldEditCUI.
+# settle: wait until the paste position stops moving. Recommended with WorldEditDisplay,
+#         which respawns its display entities on every update.
+# follow：移動中持續更新（有節流）；settle：停下後才更新（WorldEditDisplay 建議）。
+default-mode: settle
+
+# How often each player's clipboard is checked, in ticks.
+# 每位玩家檢查剪貼簿的間隔（tick）。
+poll-interval-ticks: 2
+
+# Delay before re-sending after the client's CUI handshake (world change, respawn).
+# 客戶端重新握手（換世界、重生）後，延遲多久重送（tick）。
+resend-delay-ticks: 5
+
+throttle:
+  # Minimum ticks between two updates. Keep >= 4 so WorldEditDisplay (2 tick debounce) can draw.
+  # 兩次更新的最小間隔；請保持 >= 4，讓 WorldEditDisplay 的 2 tick 防抖有空檔渲染。
+  min-send-interval-ticks: 5
+  # settle mode: ticks the paste position must stay still.
+  # settle 模式：貼上位置需靜止多少 tick。
+  settle-ticks: 6
+  # Hard cap of CUI messages per player per second (minimum 16).
+  # 每位玩家每秒 CUI 訊息上限（最少 16）。
+  max-messages-per-second: 40
+
+# Colours are #RRGGBB or #RRGGBBAA. A colour with alpha 00 hides that part.
+# For cuboids: edge, grid, point1, point2. WorldEditDisplay also uses the grid colour
+# (at 25% alpha) for fill faces when the player has fill enabled.
+# 顏色格式 #RRGGBB 或 #RRGGBBAA；alpha 為 00 表示隱藏。
+style:
+  edge: "#55FFFFFF"
+  grid: "#FFFFFF80"
+  point1: "#00000000"
+  point2: "#00000000"
+  # Grid spacing in blocks. Below 1 hides the grid (WorldEditCUI; WorldEditDisplay newer than 2.6.0).
+  # 網格間距（格）；小於 1 表示不畫網格。
+  grid-spacing: 0

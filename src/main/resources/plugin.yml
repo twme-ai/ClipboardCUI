@@ -1,0 +1,24 @@
+name: ClipboardCUI
+version: '${project.version}'
+main: dev.twme.clipboardcui.ClipboardCUI
+api-version: '1.21'
+folia-supported: true
+description: Preview where your WorldEdit clipboard will be pasted, rendered by WorldEditCUI or WorldEditDisplay.
+author: TWME
+website: https://github.com/twme-ai/ClipboardCUI
+# FastAsyncWorldEdit provides "WorldEdit".
+depend: [WorldEdit]
+softdepend: [FastAsyncWorldEdit, WorldEditDisplay]
+commands:
+  clipboardcui:
+    description: Toggle and configure your clipboard preview.
+    usage: /<command> [on|off|toggle|mode <follow|settle>|status|reload]
+    aliases: [clipcui, clippreview]
+    permission: clipboardcui.use
+permissions:
+  clipboardcui.use:
+    description: Show the clipboard paste preview and use /clipboardcui.
+    default: true
+  clipboardcui.reload:
+    description: Reload ClipboardCUI's configuration.
+    default: op
