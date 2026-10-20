@@ -49,8 +49,8 @@ walking and 1 after stopping; follow sends 7–8 updates.
 
 - Paper (or Folia) 1.21.4+, Java 21 — tested on Paper 1.21.11
 - WorldEdit 7.3+ or FastAsyncWorldEdit 2.x — tested with WorldEdit 7.4.5 and FAWE 2.16.1
-- For players: WorldEditCUI, or WorldEditDisplay on the server. Use a WorldEditDisplay release newer
-  than 2.6.0 for the best result: older releases ignore transparent colours and draw an automatic
+- For players: WorldEditCUI, or WorldEditDisplay on the server. Use WorldEditDisplay 2.7.0+ for the
+  best result: older releases ignore transparent colours and draw an automatic
   grid (≈300 entities instead of ≈36), and postpone rendering while updates keep coming.
 
 ### Commands and permissions
@@ -75,7 +75,7 @@ grid spacing below 1 hides the grid).
 
 ```bash
 mvn package                      # target/ClipboardCUI-<version>.jar, runs unit tests
-integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.6.0 + mineflayer bots
+integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.7.0 + mineflayer bots
 CLIPBOARDCUI_E2E_EDITOR=fawe CLIPBOARDCUI_E2E_WED_JAR=/path/to/WorldEditDisplay.jar integration/run-e2e.sh
 ```
 
@@ -119,7 +119,7 @@ CUI 訊息本身很小：長方體每次 5 則、多面體 16 則。真正的成
 
 - Paper（或 Folia）1.21.4+、Java 21；已在 Paper 1.21.11 測試
 - WorldEdit 7.3+ 或 FastAsyncWorldEdit 2.x；已在 WorldEdit 7.4.5、FAWE 2.16.1 測試
-- 玩家端：WorldEditCUI，或伺服器安裝 WorldEditDisplay。建議使用 2.6.0 之後的 WorldEditDisplay：
+- 玩家端：WorldEditCUI，或伺服器安裝 WorldEditDisplay。建議使用 WorldEditDisplay 2.7.0 以上：
   舊版不會略過透明顏色、會畫自動網格（約 300 個實體，而不是約 36 個），而且更新不斷時會一直延後渲染。
 
 ### 指令與權限
@@ -142,7 +142,7 @@ CUI 訊息本身很小：長方體每次 5 則、多面體 16 則。真正的成
 
 ```bash
 mvn package                      # 產出 target/ClipboardCUI-<version>.jar，並執行單元測試
-integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.6.0 + mineflayer 機器人
+integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.7.0 + mineflayer 機器人
 CLIPBOARDCUI_E2E_EDITOR=fawe CLIPBOARDCUI_E2E_WED_JAR=/path/to/WorldEditDisplay.jar integration/run-e2e.sh
 ```
 

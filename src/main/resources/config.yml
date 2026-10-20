@@ -45,6 +45,6 @@ style:
   grid: "#FFFFFF80"
   point1: "#00000000"
   point2: "#00000000"
-  # Grid spacing in blocks. Below 1 hides the grid (WorldEditCUI; WorldEditDisplay newer than 2.6.0).
+  # Grid spacing in blocks. Below 1 hides the grid (WorldEditCUI; WorldEditDisplay 2.7.0+).
   # 網格間距（格）；小於 1 表示不畫網格。
   grid-spacing: 0
