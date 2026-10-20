@@ -34,8 +34,9 @@ multi-region with a fixed UUID. It never touches WorldEdit's own selection.
 ### Packets and update rate
 
 The CUI messages are small: 5 plugin messages per cuboid update, 16 per polyhedron update. The real
-cost is on WorldEditDisplay, which respawns every display entity when a region moves (about 36
-entities, ~260 packets for a cuboid preview with the default style). ClipboardCUI therefore:
+cost is on WorldEditDisplay. Up to 2.7.0 it respawns every display entity when a region moves (36
+entities, ~240 packets for a cuboid preview with the default style); from 2.8.0 a preview that only
+moved is teleported instead (12 teleports, ~50 packets). ClipboardCUI therefore:
 
 - only sends when the footprint changes (block position, rotation, clipboard, world);
 - **settle** mode (default) waits until the paste position has stood still for 6 ticks;
@@ -43,7 +44,8 @@ entities, ~260 packets for a cuboid preview with the default style). ClipboardCU
 - caps each player at 40 CUI messages per second.
 
 Measured in the end-to-end test (Paper 1.21.11, 2 s sprint): settle sends 0 updates while
-walking and 1 after stopping; follow sends 7–8 updates.
+walking and 1 after stopping; follow sends 7–8 updates (~1235 entity packets on WorldEditDisplay
+2.7.0, ~230–290 on 2.8.0).
 
 ### Requirements
 
@@ -75,7 +77,7 @@ grid spacing below 1 hides the grid).
 
 ```bash
 mvn package                      # target/ClipboardCUI-<version>.jar, runs unit tests
-integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.7.0 + mineflayer bots
+integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.8.0 + mineflayer bots
 CLIPBOARDCUI_E2E_EDITOR=fawe CLIPBOARDCUI_E2E_WED_JAR=/path/to/WorldEditDisplay.jar integration/run-e2e.sh
 ```
 
@@ -106,14 +108,16 @@ WorldEdit 本身的選區。
 
 ### 封包數量與更新頻率
 
-CUI 訊息本身很小：長方體每次 5 則、多面體 16 則。真正的成本在 WorldEditDisplay：選區每移動一次，
-它會重生所有顯示實體（預設樣式的長方體預覽約 36 個實體、約 260 個封包）。因此 ClipboardCUI：
+CUI 訊息本身很小：長方體每次 5 則、多面體 16 則。真正的成本在 WorldEditDisplay：2.7.0 以前選區每移動一次，
+它會重生所有顯示實體（預設樣式的長方體預覽 36 個實體、約 240 個封包）；2.8.0 起，只是移動的預覽改用
+teleport（12 次 teleport、約 50 個封包）。因此 ClipboardCUI：
 
 - 只在範圍改變時送出（方塊座標、旋轉、剪貼簿、世界）；
 - **settle** 模式（預設）等貼上位置靜止 6 tick 才更新；**follow** 模式移動中也更新，但最多每 5 tick 一次；
 - 每位玩家每秒最多 40 則 CUI 訊息。
 
-端到端測試實測（Paper 1.21.11，衝刺 2 秒）：settle 移動中 0 次、停下後 1 次；follow 7–8 次。
+端到端測試實測（Paper 1.21.11，衝刺 2 秒）：settle 移動中 0 次、停下後 1 次；follow 7–8 次
+（WorldEditDisplay 2.7.0 約 1235 個實體封包，2.8.0 約 230–290 個）。
 
 ### 需求
 
@@ -142,7 +146,7 @@ CUI 訊息本身很小：長方體每次 5 則、多面體 16 則。真正的成
 
 ```bash
 mvn package                      # 產出 target/ClipboardCUI-<version>.jar，並執行單元測試
-integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.7.0 + mineflayer 機器人
+integration/run-e2e.sh           # Paper + WorldEdit + WorldEditDisplay 2.8.0 + mineflayer 機器人
 CLIPBOARDCUI_E2E_EDITOR=fawe CLIPBOARDCUI_E2E_WED_JAR=/path/to/WorldEditDisplay.jar integration/run-e2e.sh
 ```
 
