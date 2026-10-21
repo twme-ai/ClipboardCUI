@@ -250,6 +250,15 @@ async function nativeCuiScenario() {
 
   if (process.env.CLIPBOARDCUI_E2E_EDITOR === 'fawe') await faweRandomRotation(bot, cui)
 
+  // Changing dimension: WorldEditCUI drops its regions, so ClipboardCUI must resend.
+  await command(bot, '/gamemode creative ClipNative')
+  mark = cui.mark()
+  await command(bot, '/execute in minecraft:the_nether run tp ClipNative 0.5 128 0.5')
+  await cui.waitForBatch(mark, b => b[0].startsWith('+s|'), 'resend after changing to the nether')
+  mark = cui.mark()
+  await command(bot, '/execute in minecraft:overworld run tp ClipNative 12.5 -60 -24.5')
+  await cui.waitForBatch(mark, b => b[0].startsWith('+s|'), 'resend after returning to the overworld')
+
   mark = cui.mark()
   await command(bot, '/clearclipboard')
   const clearDeadline = Date.now() + timeoutMs
@@ -342,6 +351,22 @@ async function worldEditDisplayScenario() {
   results.worldEditDisplay.followWalk = packets.since(snapshot)
   assert(results.worldEditDisplay.followWalk.previewUpdates > walkTotal.previewUpdates,
     'follow mode should update while walking (debounce must not starve)')
+
+  // Changing dimension drops every entity on a real client (mineflayer keeps its stale list),
+  // so the preview must be spawned again, not just moved (#72).
+  await command(bot, '/clipboardcui mode settle')
+  await command(bot, '/gamemode creative ClipWed')
+  for (const [dimension, y] of [['the_nether', 128], ['overworld', -60]]) {
+    const before = packets.snapshot()
+    await command(bot, `/execute in minecraft:${dimension} run tp ClipWed 0.5 ${y} 0.5`)
+    for (let waited = 0; waited < 8000 && packets.since(before).previewSpawns < previewEntities; waited += 200) {
+      await sleep(200)
+    }
+    const update = packets.since(before)
+    results.worldEditDisplay[`after_${dimension}`] = update
+    assert(update.previewSpawns >= previewEntities,
+      `the preview was not spawned again after moving to ${dimension}: ${JSON.stringify(update)}`)
+  }
 
   bot.quit()
 }
